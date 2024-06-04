@@ -46,6 +46,6 @@ for (($zone = 1); ($zone -le 2); ($zone++) ) {
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName
+    -SshKeyName $sshKeyName `
     -AvailabilitySetName $availabilitySetName
 }
