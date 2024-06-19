@@ -12,6 +12,9 @@ $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
 $availabilitySetName = "mateavalset"
 
+$faultDomainCount = 2
+$updateDomainCount = 20
+
 Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
@@ -25,6 +28,16 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
+Write-Host "Creating an Availability Set $availabilitySetName ..."
+New-AzAvailabilitySet `
+-ResourceGroupName $resourceGroupName `
+-Name $availabilitySetName `
+-Location $location `
+-PlatformUpdateDomainCount $updateDomainCount `
+-PlatformFaultDomainCount $faultDomainCount `
+-Sku Aligned
+
+Write-Host "Creating the VM..."
 for (($zone = 1); ($zone -le 2); ($zone++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
@@ -35,5 +48,8 @@ for (($zone = 1); ($zone -le 2); ($zone++) ) {
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -AvailabilitySetName $availabilitySetName
 }
+Write-Host "Creating the VM has comleted"
+
