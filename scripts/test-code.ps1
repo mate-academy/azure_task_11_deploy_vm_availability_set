@@ -36,8 +36,8 @@ if ($scriptContent | Where-Object {$_.ToLower().Contains("new-azavailabilityset"
     throw "Script is not creating an availability set resource, please review it. "
 } 
 
-if ($scriptContent | Where-Object {$_.ToLower().Contains("-availabilitysetname")}) {
-    Write-Host "Checking if script has an availability set assignment - ok" 
-} else { 
-    throw "Script does not contain an availability set assignment for the VM creation, please review it. "
-} 
+if ($scriptContent | Where-Object { $_.ToLower().Contains("-availabilitysetname") -or $_.ToLower().Contains("-availabilitysetid") }) {
+  Write-Host "Checking if script has an availability set assignment - ok"
+} else {
+  throw "Script does not contain an availability set assignment for the VM creation, please review it."
+}
