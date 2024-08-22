@@ -6,7 +6,7 @@ You will get a 99.95% uptime SLA for two VMs deployed to an availability set. Th
 
 ## Prerequisites
 
-Before completing any task in the module, make sure that you followed all the steps described in the **Environment Setup** topic, in particular: 
+Before completing any task in the module, make sure that you followed all the steps described in the **Environment Setup** topic, in particular:
 
 1. Ensure you have an [Azure](https://azure.microsoft.com/en-us/free/) account and subscription.
 
@@ -45,7 +45,7 @@ In this task, you will need to write and run a Powershell script, which deploys 
 
     - Script already has code that deploys two VMs across two availability zones. Update the code to deploy two VMs into an availability set. 
     
-    - To deploy an availability set, use comandlet [New-AzAvailabilitySet](https://learn.microsoft.com/en-us/previous-versions/azure/virtual-machines/windows/tutorial-availability-sets#create-an-availability-set). 
+    - To deploy an availability set, use comandlet [New-AzAvailabilitySet](https://learn.microsoft.com/en-us/previous-versions/azure/virtual-machines/windows/tutorial-availability-sets#create-an-availability-set).
 
     - Check the documentation of [New-AzVm](https://learn.microsoft.com/en-us/powershell/module/az.compute/new-azvm?view=azps-11.5.0) comandlet to learn how to set an availability set during VM creation. 
     
