@@ -1,0 +1,426 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualNetworks_vnet_name": {
+      "type": "String"
+    },
+    "virtualMachines_matebox_1_name": {
+      "type": "String"
+    },
+    "virtualMachines_matebox_2_name": {
+      "type": "String"
+    },
+    "networkInterfaces_matebox_1_name": {
+      "type": "String"
+    },
+    "networkInterfaces_matebox_2_name": {
+      "type": "String"
+    },
+    "availabilitySets_mateavalset_name": {
+      "type": "String"
+    },
+    "sshPublicKeys_linuxboxsshkey_name": {
+      "type": "String"
+    },
+    "networkSecurityGroups_defaultnsg_name": {
+      "type": "String"
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Compute/sshPublicKeys",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('sshPublicKeys_linuxboxsshkey_name')]",
+      "location": "uksouth",
+      "properties": {
+        "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD5Ue9ClZamQtqa8MaU1M4cAHj4AJcAeAFAY6KIQLFCnz0y6Nwkdn6Og1BAEb0OowFyi8T+f//fmIZgW3Ylbk4jbgnkL/te8tTxfJ8hCPOPPAVxlH1dny7hCjRB4Xqwjy3MSBCdRwHWlLWtW87mgo+MIozNcahx/ub5xFDYYfK+lQwQSCdTqSWiazXJvLNvcQeinNq+Dm+u69d6+Deacrn7JziVrLDs1o9HbPUldfiOVtKRjAUadaPUuRWkSxeybwTPpQE/7fjZVUDA2UCbPh9zX8Y+W9RBwwtAdRP1VdGMiodxroA2npQsdZihPhzjZ9tRYL59BIK1qGLZTvWj60P6W6svMwZfOoREsTJuoaHVbAaF7lRHFdY4c9m0epVuOBvuxouhpf3XC/4nuKB28F7dYT+n3/Dz8gheFtsEwpFd8mLSmAdO5ZPnv0NRVlsx1+OoJho0G9LXQ2qkxr7dAKJ4WY2RN8ArBY3DyQnuh8E/KnesbUiQ4ifh32elaYsZ6b57Dyp61qnBsVrIz8FGBpHsyMZBdFxWqthWB2xyc2usxBN+FNeYWDUIT/p03cJJQtEjJw66b131uEj0aILRceO/Xwd1VUOuR1JfqP1bB7dcycrqmmmIEMPBftg+7CDmZfwgVIWSlDl4eRr605erMHNXNUSdgmC36qpsw378PoLAAw== p1tonidze422@example.com"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('networkSecurityGroups_defaultnsg_name')]",
+      "location": "uksouth",
+      "properties": {
+        "flushConnection": false,
+        "securityRules": [
+          {
+            "name": "SSH",
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_defaultnsg_name'), 'SSH')]",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1001,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "HTTP",
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_defaultnsg_name'), 'HTTP')]",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "8080",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1002,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('virtualNetworks_vnet_name')]",
+      "location": "uksouth",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "default",
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_name'), 'default')]",
+            "properties": {
+              "addressPrefix": "10.0.0.0/24",
+              "serviceEndpoints": [],
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          }
+        ],
+        "virtualNetworkPeerings": [],
+        "enableDdosProtection": false
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('networkSecurityGroups_defaultnsg_name'), '/HTTP')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_defaultnsg_name'))]"
+      ],
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "8080",
+        "sourceAddressPrefix": "*",
+        "destinationAddressPrefix": "*",
+        "access": "Allow",
+        "priority": 1002,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('networkSecurityGroups_defaultnsg_name'), '/SSH')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_defaultnsg_name'))]"
+      ],
+      "properties": {
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "22",
+        "sourceAddressPrefix": "*",
+        "destinationAddressPrefix": "*",
+        "access": "Allow",
+        "priority": 1001,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('virtualNetworks_vnet_name'), '/default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_name'))]"
+      ],
+      "properties": {
+        "addressPrefix": "10.0.0.0/24",
+        "serviceEndpoints": [],
+        "delegations": [],
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('availabilitySets_mateavalset_name')]",
+      "location": "uksouth",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_matebox_1_name'))]",
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_matebox_2_name'))]"
+      ],
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 5,
+        "platformFaultDomainCount": 2,
+        "virtualMachines": [
+          {
+            "id": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_matebox_1_name'))]"
+          },
+          {
+            "id": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_matebox_2_name'))]"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('virtualMachines_matebox_1_name')]",
+      "location": "uksouth",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySets_mateavalset_name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_matebox_1_name'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySets_mateavalset_name'))]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "0001-com-ubuntu-server-jammy",
+            "sku": "22_04-lts-gen2",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Linux",
+            "name": "[concat(parameters('virtualMachines_matebox_1_name'), '_OsDisk_1_da9e0cf42f514e07a7e06bb110d480be')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS",
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_matebox_1_name'), '_OsDisk_1_da9e0cf42f514e07a7e06bb110d480be'))]"
+            },
+            "deleteOption": "Detach",
+            "diskSizeGB": 30
+          },
+          "dataDisks": [],
+          "diskControllerType": "SCSI"
+        },
+        "osProfile": {
+          "computerName": "[parameters('virtualMachines_matebox_1_name')]",
+          "adminUsername": "p1ton",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "/home/p1ton/.ssh/authorized_keys",
+                  "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD5Ue9ClZamQtqa8MaU1M4cAHj4AJcAeAFAY6KIQLFCnz0y6Nwkdn6Og1BAEb0OowFyi8T+f//fmIZgW3Ylbk4jbgnkL/te8tTxfJ8hCPOPPAVxlH1dny7hCjRB4Xqwjy3MSBCdRwHWlLWtW87mgo+MIozNcahx/ub5xFDYYfK+lQwQSCdTqSWiazXJvLNvcQeinNq+Dm+u69d6+Deacrn7JziVrLDs1o9HbPUldfiOVtKRjAUadaPUuRWkSxeybwTPpQE/7fjZVUDA2UCbPh9zX8Y+W9RBwwtAdRP1VdGMiodxroA2npQsdZihPhzjZ9tRYL59BIK1qGLZTvWj60P6W6svMwZfOoREsTJuoaHVbAaF7lRHFdY4c9m0epVuOBvuxouhpf3XC/4nuKB28F7dYT+n3/Dz8gheFtsEwpFd8mLSmAdO5ZPnv0NRVlsx1+OoJho0G9LXQ2qkxr7dAKJ4WY2RN8ArBY3DyQnuh8E/KnesbUiQ4ifh32elaYsZ6b57Dyp61qnBsVrIz8FGBpHsyMZBdFxWqthWB2xyc2usxBN+FNeYWDUIT/p03cJJQtEjJw66b131uEj0aILRceO/Xwd1VUOuR1JfqP1bB7dcycrqmmmIEMPBftg+7CDmZfwgVIWSlDl4eRr605erMHNXNUSdgmC36qpsw378PoLAAw== p1tonidze422@example.com"
+                }
+              ]
+            },
+            "provisionVMAgent": true,
+            "patchSettings": {
+              "patchMode": "ImageDefault",
+              "assessmentMode": "ImageDefault"
+            }
+          },
+          "secrets": [],
+          "allowExtensionOperations": true,
+          "requireGuestProvisionSignal": true
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_matebox_1_name'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-07-01",
+      "name": "[parameters('virtualMachines_matebox_2_name')]",
+      "location": "uksouth",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySets_mateavalset_name'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_matebox_2_name'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySets_mateavalset_name'))]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "0001-com-ubuntu-server-jammy",
+            "sku": "22_04-lts-gen2",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Linux",
+            "name": "[concat(parameters('virtualMachines_matebox_2_name'), '_OsDisk_1_59e4e163dd1f43c88560b5900556ef4e')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS",
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_matebox_2_name'), '_OsDisk_1_59e4e163dd1f43c88560b5900556ef4e'))]"
+            },
+            "deleteOption": "Detach",
+            "diskSizeGB": 30
+          },
+          "dataDisks": [],
+          "diskControllerType": "SCSI"
+        },
+        "osProfile": {
+          "computerName": "[parameters('virtualMachines_matebox_2_name')]",
+          "adminUsername": "p1ton",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "/home/p1ton/.ssh/authorized_keys",
+                  "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD5Ue9ClZamQtqa8MaU1M4cAHj4AJcAeAFAY6KIQLFCnz0y6Nwkdn6Og1BAEb0OowFyi8T+f//fmIZgW3Ylbk4jbgnkL/te8tTxfJ8hCPOPPAVxlH1dny7hCjRB4Xqwjy3MSBCdRwHWlLWtW87mgo+MIozNcahx/ub5xFDYYfK+lQwQSCdTqSWiazXJvLNvcQeinNq+Dm+u69d6+Deacrn7JziVrLDs1o9HbPUldfiOVtKRjAUadaPUuRWkSxeybwTPpQE/7fjZVUDA2UCbPh9zX8Y+W9RBwwtAdRP1VdGMiodxroA2npQsdZihPhzjZ9tRYL59BIK1qGLZTvWj60P6W6svMwZfOoREsTJuoaHVbAaF7lRHFdY4c9m0epVuOBvuxouhpf3XC/4nuKB28F7dYT+n3/Dz8gheFtsEwpFd8mLSmAdO5ZPnv0NRVlsx1+OoJho0G9LXQ2qkxr7dAKJ4WY2RN8ArBY3DyQnuh8E/KnesbUiQ4ifh32elaYsZ6b57Dyp61qnBsVrIz8FGBpHsyMZBdFxWqthWB2xyc2usxBN+FNeYWDUIT/p03cJJQtEjJw66b131uEj0aILRceO/Xwd1VUOuR1JfqP1bB7dcycrqmmmIEMPBftg+7CDmZfwgVIWSlDl4eRr605erMHNXNUSdgmC36qpsw378PoLAAw== p1tonidze422@example.com"
+                }
+              ]
+            },
+            "provisionVMAgent": true,
+            "patchSettings": {
+              "patchMode": "ImageDefault",
+              "assessmentMode": "ImageDefault"
+            }
+          },
+          "secrets": [],
+          "allowExtensionOperations": true,
+          "requireGuestProvisionSignal": true
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_matebox_2_name'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('networkInterfaces_matebox_1_name')]",
+      "location": "uksouth",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_name'), 'default')]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_defaultnsg_name'))]"
+      ],
+      "kind": "Regular",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "[parameters('networkInterfaces_matebox_1_name')]",
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_matebox_1_name')), concat('/ipConfigurations/', parameters('networkInterfaces_matebox_1_name')))]",
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations",
+            "properties": {
+              "privateIPAddress": "10.0.0.4",
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_name'), 'default')]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "disableTcpStateTracking": false,
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_defaultnsg_name'))]"
+        },
+        "nicType": "Standard",
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('networkInterfaces_matebox_2_name')]",
+      "location": "uksouth",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_name'), 'default')]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_defaultnsg_name'))]"
+      ],
+      "kind": "Regular",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "[parameters('networkInterfaces_matebox_2_name')]",
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_matebox_2_name')), concat('/ipConfigurations/', parameters('networkInterfaces_matebox_2_name')))]",
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations",
+            "properties": {
+              "privateIPAddress": "10.0.0.5",
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_name'), 'default')]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "disableTcpStateTracking": false,
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_defaultnsg_name'))]"
+        },
+        "nicType": "Standard",
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None"
+      }
+    }
+  ]
+}
