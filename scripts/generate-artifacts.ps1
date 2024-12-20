@@ -1,11 +1,11 @@
 param(
     [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-    [string]$ArtifactsStorageAccountName='matestorage123'
+    [string]$ArtifactsStorageAccountName
 )
 
 # default script values
-$rgName = "mate-azure-task-11"
-$taskName = "task11"
+$rgName = "mate-azure-task-2"
+$taskName = "task2"
 
 $containerName = "task-artifacts"
 $resourcesTemplateName = "exported-template.json"
@@ -27,7 +27,7 @@ $storageAccount = (Get-AzStorageAccount -ErrorAction SilentlyContinue | Where-Ob
 if ($storageAccount) {
     Write-Output "Storage account found"
 } else { 
-    throw "Unable to find storage account $ArtifactsStorageAccountName . Please make sure, that you specified the correct name of the storage account for the artifacts and that it is present in your Azure subscription"
+    throw "Unable to find storage account $ArtifactsStorageAccountName. Please make sure, that you specified the correct name of the storage account for the artifacts and that it is present in your Azure subscription"
 }
 
 Write-Output "Checking if artifacts storage container exists" 
@@ -37,6 +37,7 @@ if ($artifactContainer) {
 } else { 
     throw "Unable to find a storage container $containerName in the storage account $ArtifactsStorageAccountName, please make sure that it's created"
 }
+
 
 # generation of artifacts
 Write-Output "Generating artifacts"
