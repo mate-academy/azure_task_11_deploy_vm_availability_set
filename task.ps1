@@ -11,6 +11,7 @@ $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
 $availabilitySetName = "mateavalset"
+$amountRequiredVM = 2
 
 Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
@@ -20,20 +21,33 @@ $nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH  -Protocol Tcp -Directio
 $nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name HTTP  -Protocol Tcp -Direction Inbound -Priority 1002 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 8080 -Access Allow;
 New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $nsgRuleSSH, $nsgRuleHTTP
 
+Write-Host "Creating a virtual network and subnet ..."
 $subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix
 New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
+Write-Host "Creating availability set: $availabilitySetName..."
+New-AzAvailabilitySet `
+  -Location $location `
+  -Name $availabilitySetName `
+  -ResourceGroupName $resourceGroupName `
+  -PlatformFaultDomainCount 2 `
+  -PlatformUpdateDomainCount 20 `
+  -Sku Aligned
+
+
+for (($vm = 1); ($vm -le $amountRequiredVM); ($vm++) ) {
+  Write-Host "Creating VM $vmName-$vm in $availabilitySetName..."
+  New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$vm" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -AvailabilitySetName $availabilitySetName `
+    -SshKeyName $sshKeyName
 }
