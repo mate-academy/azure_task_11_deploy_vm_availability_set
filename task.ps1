@@ -25,6 +25,14 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
+New-AzAvailabilitySet -Location $location -ResourceGroupName $resourceGroupName -Name $availabilitySetName -Sku aligned -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 5
+
+$sshPublicKey = Get-AzSshPublicKey -ResourceGroupName $resourceGroupName -Name $sshKeyName
+$sshKeyId = $sshPublicKey.Id
+
+$availabilitySet = Get-AzAvailabilitySet -ResourceGroupName $resourceGroupName -Name $availabilitySetName
+$availabilitySetId = $availabilitySet.Id
+
 for (($zone = 1); ($zone -le 2); ($zone++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
@@ -35,5 +43,6 @@ for (($zone = 1); ($zone -le 2); ($zone++) ) {
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyId $sshKeyId `
+    -AvailabilitySetId $availabilitySetId
 }
