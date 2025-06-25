@@ -43,6 +43,6 @@ for (($zone = 1); ($zone -le 2); ($zone++) ) {
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyValue $sshKeyName `
+    -SshKeyValue "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC5r/k+NpBFDkrG1436gx7+wbEVTaEa/WrN+tsDd6jZdgUMxLNHhjhLcPWBqb7FzX+CWGUnd7O3ev54YlPmmR6N85QgcOfZgEJeqwzLbxTgLbJNXULhKwDrO8FoCgxgPv9ftNudsLeXwv4fh3iIo1ZE6SsSUouaYd3XXeUDkWARka198vKscDG3KRvUA/Jn+pdOxQ+8dJv/1GwtoI7saXW7FeCI6ykqy+n9X+bYoQ0saD0af65szJydKxEoEDje+zCin5M9ckUvlwJ0Khnk0/pI/jZ7AQ0WWYlLb8UD1QgGEIPi7P2t6PjKcE1omcu+K19ICb4K+OU4I8NGojkANX8H4EzLd8vl7rC0sxAwviKgmqjV4rv8EC81oJEMaCmnHhEZVMLdxkKQltoRKh305vXcqfGJW0P/7AtG9DxYD2U7PaOjhP4S2zpxhEGRbZlxFf1/lXJHBLWYBmQWjc4B527sZywNLVyy94RGSTlvEKE/L1zrAD3t7lKKPdHCfM8HsW0= generated-by-azure" `
     -AvailabilitySetName $availabilitySetName
 }
