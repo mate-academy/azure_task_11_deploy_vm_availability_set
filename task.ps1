@@ -6,9 +6,9 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
+$sshKeyPublicKey = Get-Content "~/.ssh/id_ed25519.pub"
 $vmName = "matebox"
-$vmImage = "Ubuntu2204"
+$vmImage = "Canonical:UbuntuServer:22.04-LTS:latest'"
 $vmSize = "Standard_B1s"
 $availabilitySetName = "mateavalset"
 
@@ -25,15 +25,18 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+New-AzAvailabilitySet -Location $location -Name $availabilitySetName -ResourceGroupName $resourceGroupName  -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 2 -Sku Aligned
+
+foreach ($i in 1..2) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$i" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -AvailabilitySetName $availabilitySetName  `
 }
