@@ -25,15 +25,26 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
-    -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+Write-Host "Creating Availability Set $availabilitySet ..."
+New-AzAvailabilitySet `
     -Location $location `
-    -image $vmImage `
-    -size $vmSize `
-    -SubnetName $subnetName `
-    -VirtualNetworkName $virtualNetworkName `
-    -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -Name $availabilitySetName `
+    -ResourceGroupName $resourceGroupName `
+    -Sku aligned `
+    -PlatformFaultDomainCount 2 `
+    -PlatformUpdateDomainCount 2
+
+Write-Host "Creating two VM into Availability Set ..."
+for ($i = 1; $i -le 2; $i++) {
+    New-AzVm `
+        -ResourceGroupName $resourceGroupName `
+        -Name "$vmName-$i" `
+        -Location $location `
+        -Image $vmImage `
+        -Size $vmSize `
+        -SubnetName $subnetName `
+        -VirtualNetworkName $virtualNetworkName `
+        -SecurityGroupName $networkSecurityGroupName `
+        -SshKeyName $sshKeyName `
+        -AvailabilitySetName $availabilitySetName
 }
