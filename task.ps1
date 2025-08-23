@@ -25,14 +25,18 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-New-AzAvailabilitySet `
--ResourceGroupName $resourceGroupName `
--Location $location `
--Name $availabilitySetName `
--Sku Aligned `
--PlatformFaultDomainCount 2 `
--PlatformUpdateDomainCount 5
+$availabilitySet = Get-AzAvailabilitySet -Name $availabilitySetName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
 
+if ($availabilitySet -eq $null)
+{
+    New-AzAvailabilitySet `
+    -ResourceGroupName $resourceGroupName `
+    -Location $location `
+    -Name $availabilitySetName `
+    -Sku Aligned `
+    -PlatformFaultDomainCount 2 `
+    -PlatformUpdateDomainCount 5
+}
 
 for (($vmIndex = 1); ($vmIndex -le 2); ($zone++)) {
     New-AzVm `
