@@ -27,7 +27,7 @@ New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey 
 
 $availabilitySet = Get-AzAvailabilitySet -Name $availabilitySetName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
 
-if ($availabilitySet -eq $null)
+if ($null -eq $availabilitySet)
 {
     New-AzAvailabilitySet `
     -ResourceGroupName $resourceGroupName `
