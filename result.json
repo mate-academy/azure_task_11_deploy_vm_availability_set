@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "matebox-as1",
+    "AvailabilitySet": "mate-avset",
+    "Location": "uksouth"
+  },
+  {
+    "Name": "matebox-as2",
+    "AvailabilitySet": "mate-avset",
+    "Location": "uksouth"
+  }
+]
