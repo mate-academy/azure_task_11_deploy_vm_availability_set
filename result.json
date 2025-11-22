@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "matebox1",
+    "AvailabilitySet": "mateavalset",
+    "Location": "uksouth"
+  },
+  {
+    "Name": "matebox2",
+    "AvailabilitySet": "mateavalset",
+    "Location": "uksouth"
+  }
+]

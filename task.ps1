@@ -6,7 +6,7 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
+$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub"
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
@@ -20,20 +20,36 @@ $nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH  -Protocol Tcp -Directio
 $nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name HTTP  -Protocol Tcp -Direction Inbound -Priority 1002 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 8080 -Access Allow;
 New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $nsgRuleSSH, $nsgRuleHTTP
 
+Write-Host "Creating a Virtual Network $virtualNetworkName ..."
 $subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix
 New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
 
+Write-Host "Creating an SSH Key $sshKeyName ..."
+# Примітка: Ця команда New-AzSshKey може вимагати, щоб ключ був присутній у каталозі ~/.ssh/
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
+Write-Host "Creating an Availability Set $availabilitySetName ..."
+# Виправлено: забезпечено правильний синтаксис для параметра -Sku Aligned
+New-AzAvailabilitySet `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name $availabilitySetName `
     -Location $location `
-    -image $vmImage `
-    -size $vmSize `
-    -SubnetName $subnetName `
-    -VirtualNetworkName $virtualNetworkName `
-    -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -PlatformFaultDomainCount 2 `
+    -PlatformUpdateDomainCount 5 `
+    -Sku Aligned
+
+for (($i = 1); ($i -le 2); ($i++) ) {
+    Write-Host "Creating Virtual Machine $vmName-$i in $availabilitySetName ..."
+    # Для New-AzVm в цьому випадку не потрібно вказувати Credential, оскільки використовується SshKeyName
+    New-AzVm `
+        -ResourceGroupName $resourceGroupName `
+        -Name "$vmName-$i" `
+        -Location $location `
+        -image $vmImage `
+        -size $vmSize `
+        -SubnetName $subnetName `
+        -VirtualNetworkName $virtualNetworkName `
+        -SecurityGroupName $networkSecurityGroupName `
+        -SshKeyName $sshKeyName `
+        -AvailabilitySetName $availabilitySetName
 }
