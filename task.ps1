@@ -1,39 +1,129 @@
-$location = "uksouth"
+$ErrorActionPreference = "Stop"
+
+# -----------------------------
+#   CONFIGURATION
+# -----------------------------
+
+$location = "northeurope"
 $resourceGroupName = "mate-azure-task-11"
+
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
 $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
+
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
-$vmName = "matebox"
+$sshKeyPublicKeyPath = "$HOME/.ssh/id_rsa.pub"   # змінити якщо ключ інший
+
+$availabilitySetName = "mate-availability-set"
+
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
-$availabilitySetName = "mateavalset"
+$vmBaseName = "mate11vm"
 
-Write-Host "Creating a resource group $resourceGroupName ..."
-New-AzResourceGroup -Name $resourceGroupName -Location $location
+# -----------------------------
+#   CHECK SSH PUBLIC KEY
+# -----------------------------
 
-Write-Host "Creating a network security group $networkSecurityGroupName ..."
-$nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH  -Protocol Tcp -Direction Inbound -Priority 1001 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow;
-$nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name HTTP  -Protocol Tcp -Direction Inbound -Priority 1002 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 8080 -Access Allow;
-New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $nsgRuleSSH, $nsgRuleHTTP
-
-$subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix
-New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
-
-New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
-
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
-    -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
-    -Location $location `
-    -image $vmImage `
-    -size $vmSize `
-    -SubnetName $subnetName `
-    -VirtualNetworkName $virtualNetworkName `
-    -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+if (-not (Test-Path $sshKeyPublicKeyPath)) {
+    throw "SSH public key not found at $sshKeyPublicKeyPath"
 }
+
+$sshKeyPublicKey = Get-Content -Path $sshKeyPublicKeyPath -Raw
+
+# -----------------------------
+#   CREATE RESOURCE GROUP
+# -----------------------------
+
+Write-Host "Creating resource group $resourceGroupName ..."
+New-AzResourceGroup -Name $resourceGroupName -Location $location -Force | Out-Null
+
+# -----------------------------
+#   CREATE NSG
+# -----------------------------
+
+Write-Host "Creating NSG $networkSecurityGroupName ..."
+$nsgRuleSSH = New-AzNetworkSecurityRuleConfig `
+    -Name "SSH" `
+    -Protocol Tcp `
+    -Direction Inbound `
+    -Priority 1000 `
+    -SourceAddressPrefix "*" `
+    -SourcePortRange "*" `
+    -DestinationAddressPrefix "*" `
+    -DestinationPortRange 22 `
+    -Access Allow
+
+$nsg = New-AzNetworkSecurityGroup `
+    -ResourceGroupName $resourceGroupName `
+    -Location $location `
+    -Name $networkSecurityGroupName `
+    -SecurityRules $nsgRuleSSH
+
+# -----------------------------
+#   CREATE VNET + SUBNET
+# -----------------------------
+
+Write-Host "Creating virtual network $virtualNetworkName ..."
+$subnet = New-AzVirtualNetworkSubnetConfig `
+    -Name $subnetName `
+    -AddressPrefix $subnetAddressPrefix `
+    -NetworkSecurityGroup $nsg
+
+$vnet = New-AzVirtualNetwork `
+    -ResourceGroupName $resourceGroupName `
+    -Location $location `
+    -Name $virtualNetworkName `
+    -AddressPrefix $vnetAddressPrefix `
+    -Subnet $subnet
+
+# -----------------------------
+#   CREATE SSH KEY RESOURCE
+# -----------------------------
+
+Write-Host "Creating SSH key resource $sshKeyName ..."
+New-AzSshKey `
+    -ResourceGroupName $resourceGroupName `
+    -Name $sshKeyName `
+    -PublicKey $sshKeyPublicKey | Out-Null
+
+# -----------------------------
+#   CREATE AVAILABILITY SET
+# -----------------------------
+
+Write-Host "Creating Availability Set $availabilitySetName ..."
+New-AzAvailabilitySet `
+    -ResourceGroupName $resourceGroupName `
+    -Name $availabilitySetName `
+    -Location $location `
+    -Sku Aligned `
+    -PlatformFaultDomainCount 2 `
+    -PlatformUpdateDomainCount 5 | Out-Null
+
+# -----------------------------
+#   CREATE TWO VMS IN AVAILABILITY SET
+# -----------------------------
+
+for ($i = 1; $i -le 2; $i++) {
+
+    $vmName = "$vmBaseName$i"
+
+    Write-Host "Creating VM $vmName ..."
+
+    New-AzVM `
+        -ResourceGroupName $resourceGroupName `
+        -Location $location `
+        -Name $vmName `
+        -VirtualNetworkName $virtualNetworkName `
+        -AddressPrefix $vnetAddressPrefix `
+        -SubnetName $subnetName `
+        -SubnetAddressPrefix $subnetAddressPrefix `
+        -SecurityGroupName $networkSecurityGroupName `
+        -Image $vmImage `
+        -Size $vmSize `
+        -SshKeyName $sshKeyName `
+        -AvailabilitySetName $availabilitySetName
+}
+
+Write-Host "`nDeployment completed successfully!"
