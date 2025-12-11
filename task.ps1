@@ -1,4 +1,4 @@
-$location = "uksouth"
+$location = "switzerlandnorth"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -6,7 +6,14 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
+$publicKeyPath = Join-Path $HOME '.ssh/ssh-key-ubuntu.pub'
+
+if (-not (Test-Path -Path $publicKeyPath)) {
+    Write-Error "Public key file not found at $publicKeyPath. Please ensure the key exists or update \$publicKeyPath."
+    exit 1
+}
+
+$sshKeyPublicKey = Get-Content -Path $publicKeyPath -Raw
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
@@ -25,15 +32,18 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+$az = New-AzAvailabilitySet -ResourceGroupName $resourceGroupName -Name $availabilitySetName -Location $location -Sku Aligned -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 2
+
+for (($i = 1); ($i -le 2); ($i++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$i" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -AvailabilitySetName $availabilitySetName
 }
