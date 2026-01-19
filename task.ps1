@@ -1,4 +1,4 @@
-$location = "uksouth"
+$location = "canadacentral"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -6,7 +6,7 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
+$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" -Raw
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
@@ -24,16 +24,19 @@ $subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $sub
 New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
+New-AzAvailabilitySet -Name $availabilitySetName -ResourceGroupName $resourceGroupName -Location $location -Sku Aligned -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 5
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+
+foreach ($vmNumber in 1..2) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$vmNumber" `
     -Location $location `
+    -AvailabilitySetName $availabilitySetName `
     -image $vmImage `
     -size $vmSize `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName
 }
