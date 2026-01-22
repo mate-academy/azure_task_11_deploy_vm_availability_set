@@ -45,7 +45,7 @@ In this task, you will need to write and run a Powershell script, which deploys 
 
     - Script already has code that deploys two VMs across two availability zones. Update the code to deploy two VMs into an availability set. 
     
-    - To deploy an availability set, use comandlet [New-AzAvailabilitySet](https://learn.microsoft.com/en-us/previous-versions/azure/virtual-machines/windows/tutorial-availability-sets#create-an-availability-set). 
+    - To deploy an availability set, use comandlet [New-AzAvailabilitySet](https://learn.microsoft.com/en-us/previous-versions/azure/virtual-machines/windows/tutorial-availability-sets#create-an-availability-set).
 
     - Check the documentation of [New-AzVm](https://learn.microsoft.com/en-us/powershell/module/az.compute/new-azvm?view=azps-11.5.0) comandlet to learn how to set an availability set during VM creation. 
     
