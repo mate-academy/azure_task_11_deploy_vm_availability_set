@@ -9,7 +9,7 @@ $sshKeyName = "linuxboxsshkey"
 $sshKeyPublicKey = Get-Content "$HOME\.ssh\id_ed25519.pub" -Raw
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
-$vmSize = "Standard_B2ats_v2"
+$vmSize = "Standard_B2ats_v2" # Standard_B1s not available in any region
 $availabilitySetName = "mateavalset"
 
 Write-Host "Creating a resource group $resourceGroupName ..."
