@@ -1,4 +1,4 @@
-$location = "uksouth"
+$location = "canadacentral"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -6,10 +6,10 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
+$sshKeyPublicKey = Get-Content "$HOME\.ssh\id_ed25519.pub" -Raw
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
-$vmSize = "Standard_B1s"
+$vmSize = "Standard_B2ats_v2" # Standard_B1s not available in any region
 $availabilitySetName = "mateavalset"
 
 Write-Host "Creating a resource group $resourceGroupName ..."
@@ -25,6 +25,15 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
+Write-Host "Creating an availability set $availabilitySetName ..."
+New-AzAvailabilitySet `
+    -ResourceGroupName $resourceGroupName `
+    -Name $availabilitySetName `
+    -Location $location `
+    -Sku Aligned `
+    -PlatformFaultDomainCount 2 `
+    -PlatformUpdateDomainCount 2
+
 for (($zone = 1); ($zone -le 2); ($zone++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
@@ -35,5 +44,6 @@ for (($zone = 1); ($zone -le 2); ($zone++) ) {
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -AvailabilitySetName $availabilitySetName
 }
