@@ -1,4 +1,4 @@
-$location = "uksouth"
+$location = "norwayeast"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -9,7 +9,7 @@ $sshKeyName = "linuxboxsshkey"
 $sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
-$vmSize = "Standard_B1s"
+$vmSize = "Standard_B2ats_v2" #The B1s size is not included in free tier subscription.
 $availabilitySetName = "mateavalset"
 
 Write-Host "Creating a resource group $resourceGroupName ..."
@@ -25,15 +25,17 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+New-AzAvailabilitySet -Location $location -Name $availabilitySetName -ResourceGroupName $resourceGroupName -Sku aligned -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 2
+
+for (($prefix = 1); ($prefix -le 2); ($prefix++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$prefix" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName -AvailabilitySetName $availabilitySetName
 }
