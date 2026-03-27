@@ -1,39 +1,59 @@
-$location = "uksouth"
+$location = "swedencentral" 
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
 $subnetName = "default"
-$vnetAddressPrefix = "10.0.0.0/16"
-$subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
-$vmSize = "Standard_B1s"
+$vmSize = "Standard_D2as_v5" 
 $availabilitySetName = "mateavalset"
 
-Write-Host "Creating a resource group $resourceGroupName ..."
-New-AzResourceGroup -Name $resourceGroupName -Location $location
+# 1. Створення групи ресурсів
+if (-not (Get-AzResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue)) {
+  New-AzResourceGroup -Name $resourceGroupName -Location $location
+}
 
-Write-Host "Creating a network security group $networkSecurityGroupName ..."
-$nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH  -Protocol Tcp -Direction Inbound -Priority 1001 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow;
-$nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name HTTP  -Protocol Tcp -Direction Inbound -Priority 1002 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 8080 -Access Allow;
-New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $nsgRuleSSH, $nsgRuleHTTP
-
-$subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix
-New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
-
-New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
-
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
+# 2. Створення Availability Set (Це наш кошик для відмовостійкості)
+if (-not (Get-AzAvailabilitySet -ResourceGroupName $resourceGroupName -Name $availabilitySetName -ErrorAction SilentlyContinue)) {
+  New-AzAvailabilitySet `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name $availabilitySetName `
     -Location $location `
-    -image $vmImage `
-    -size $vmSize `
-    -SubnetName $subnetName `
-    -VirtualNetworkName $virtualNetworkName `
-    -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -Sku Aligned `
+    -PlatformUpdateDomainCount 2 `
+    -PlatformFaultDomainCount 2
+}
+
+# 3. Мережева інфраструктура
+$nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH -Protocol Tcp -Direction Inbound -Priority 1001 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
+$nsg = New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $nsgRuleSSH
+
+$subnetConfig = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix "10.0.0.0/24" -NetworkSecurityGroup $nsg
+$vnet = New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix "10.0.0.0/16" -Subnet $subnetConfig
+
+# 4. Створення SSH ключа в Azure (Cloud-side)
+if (-not (Get-AzSshKey -ResourceGroupName $resourceGroupName -Name $sshKeyName -ErrorAction SilentlyContinue)) {
+  Write-Host "Генерація SSH ключа в Azure..." -ForegroundColor Yellow
+  New-AzSshKey -ResourceGroupName $resourceGroupName -Name $sshKeyName -Location $location
+}
+
+# 5. Цикл розгортання з ПРИВ'ЯЗКОЮ до Availability Set
+for ($i = 1; $i -le 2; $i++) {
+  Write-Host "--- Розгортання $vmName-$i у $availabilitySetName ---" -ForegroundColor Green
+    
+  $vmParams = @{
+    ResourceGroupName   = $resourceGroupName
+    Name                = "$vmName-$i"
+    Location            = $location
+    Image               = $vmImage
+    Size                = $vmSize
+    VirtualNetworkName  = $virtualNetworkName
+    SubnetName          = $subnetName
+    SecurityGroupName   = $networkSecurityGroupName
+    AvailabilitySetName = $availabilitySetName
+    SshKeyName          = $sshKeyName
+  }
+
+  New-AzVm @vmParams -Verbose
 }
