@@ -1,3 +1,6 @@
+$ErrorActionPreference = "Stop"
+
+# README: any region; change if Standard_B1s hits capacity (see Azure portal / quota).
 $location = "uksouth"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
@@ -6,34 +9,57 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
 $availabilitySetName = "mateavalset"
 
+$sshPublicKeyPath = Join-Path $HOME ".ssh/id_ed25519.pub"
+if (-not (Test-Path $sshPublicKeyPath)) {
+    $sshPublicKeyPath = Join-Path $HOME ".ssh/id_rsa.pub"
+}
+$sshKeyPublicKey = Get-Content -Path $sshPublicKeyPath -Raw
+$secPlain = ConvertTo-SecureString "N0tUsedForLogin!" -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential ("azureuser", $secPlain)
+
 Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating a network security group $networkSecurityGroupName ..."
-$nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH  -Protocol Tcp -Direction Inbound -Priority 1001 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow;
-$nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name HTTP  -Protocol Tcp -Direction Inbound -Priority 1002 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 8080 -Access Allow;
-New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $nsgRuleSSH, $nsgRuleHTTP
+$nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH -Protocol Tcp -Direction Inbound -Priority 1001 `
+    -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
+$nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name HTTP -Protocol Tcp -Direction Inbound -Priority 1002 `
+    -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 8080 -Access Allow
+$nsg = New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $resourceGroupName `
+    -Location $location -SecurityRules $nsgRuleSSH, $nsgRuleHTTP
 
-$subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix
-New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
+Write-Host "Creating virtual network $virtualNetworkName ..."
+$subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix -NetworkSecurityGroup $nsg
+New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location `
+    -AddressPrefix $vnetAddressPrefix -Subnet $subnet
 
-New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
+Write-Host "Creating SSH key resource $sshKeyName ..."
+New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -Location $location -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
-    -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
-    -Location $location `
-    -image $vmImage `
-    -size $vmSize `
-    -SubnetName $subnetName `
-    -VirtualNetworkName $virtualNetworkName `
-    -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+Write-Host "Creating availability set $availabilitySetName ..."
+New-AzAvailabilitySet -Name $availabilitySetName -ResourceGroupName $resourceGroupName -Location $location `
+    -Sku Aligned -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 2
+
+for ($i = 1; $i -le 2; $i++) {
+    $instanceName = "$vmName-$i"
+    Write-Host "Creating VM $instanceName in availability set $availabilitySetName ..."
+    $newVmParams = @{
+        ResourceGroupName    = $resourceGroupName
+        Name                 = $instanceName
+        Location             = $location
+        Image                = $vmImage
+        Size                 = $vmSize
+        SubnetName           = $subnetName
+        VirtualNetworkName   = $virtualNetworkName
+        SecurityGroupName    = $networkSecurityGroupName
+        SshKeyName           = $sshKeyName
+        AvailabilitySetName  = $availabilitySetName
+        Credential           = $cred
+    }
+    New-AzVM @newVmParams
 }
