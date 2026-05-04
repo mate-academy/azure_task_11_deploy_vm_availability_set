@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-# README: any region; change if Standard_B1s hits capacity (see Azure portal / quota).
-$location = "uksouth"
+# README: any region — centralus (mate-azure-task-2 already had a VM here; B1s blocked in UK/NE on this sub).
+$location = "centralus"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -11,6 +11,7 @@ $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
+# Mate validate-artifacts.ps1 checks this exact SKU — do not swap for deploy-only testing if you need CI to pass.
 $vmSize = "Standard_B1s"
 $availabilitySetName = "mateavalset"
 
@@ -48,18 +49,6 @@ New-AzAvailabilitySet -Name $availabilitySetName -ResourceGroupName $resourceGro
 for ($i = 1; $i -le 2; $i++) {
     $instanceName = "$vmName-$i"
     Write-Host "Creating VM $instanceName in availability set $availabilitySetName ..."
-    $newVmParams = @{
-        ResourceGroupName    = $resourceGroupName
-        Name                 = $instanceName
-        Location             = $location
-        Image                = $vmImage
-        Size                 = $vmSize
-        SubnetName           = $subnetName
-        VirtualNetworkName   = $virtualNetworkName
-        SecurityGroupName    = $networkSecurityGroupName
-        SshKeyName           = $sshKeyName
-        AvailabilitySetName  = $availabilitySetName
-        Credential           = $cred
-    }
-    New-AzVM @newVmParams
+    # Single-line New-AzVM avoids PS line-continuation misparsing -SshKeyName on some hosts.
+    New-AzVM -ResourceGroupName $resourceGroupName -Name $instanceName -Location $location -Image $vmImage -Size $vmSize -SubnetName $subnetName -VirtualNetworkName $virtualNetworkName -SecurityGroupName $networkSecurityGroupName -SshKeyName $sshKeyName -AvailabilitySetName $availabilitySetName -Credential $cred
 }
