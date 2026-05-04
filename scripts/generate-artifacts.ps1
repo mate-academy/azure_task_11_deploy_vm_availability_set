@@ -50,6 +50,16 @@ if (-not (Test-Path "$tempFolderPath")) {
 Write-Output "Exporting resources template"
 Export-AzResourceGroup -ResourceGroupName $rgName -Path "$tempFolderPath/$resourcesTemplateName" -Force
 
+$exportJson = Get-Content -Path "$tempFolderPath/$resourcesTemplateName" -Raw | ConvertFrom-Json
+$vmResources = @( $exportJson.resources | Where-Object { $_.type -eq 'Microsoft.Compute/virtualMachines' } )
+$asResources = @( $exportJson.resources | Where-Object { $_.type -eq 'Microsoft.Compute/availabilitySets' } )
+if ($vmResources.Count -ne 2) {
+    throw "Export has $($vmResources.Count) Microsoft.Compute/virtualMachines resource(s); expected 2. Deploy with task.ps1 (RG '$rgName'), then run this script again."
+}
+if ($asResources.Count -ne 1) {
+    throw "Export has $($asResources.Count) Microsoft.Compute/availabilitySets resource(s); expected 1. Create one availability set and attach both VMs, then re-run."
+}
+
 Write-Output "Uploading resources template"
 $ResourcesTemplateBlob = @{
     File             = "$tempFolderPath/$resourcesTemplateName"
