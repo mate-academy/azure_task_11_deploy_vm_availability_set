@@ -1,4 +1,4 @@
-$location = "uksouth"
+$location = "denmarkeast"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -25,15 +25,29 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+Write-Host "Creating an availability set $availabilitySetName ..."
+New-AzAvailabilitySet `
+-ResourceGroupName $resourceGroupName `
+-Name $availabilitySetName `
+-Location $location `
+-Sku "Aligned" `
+-PlatformFaultDomainCount 2 `
+-PlatformUpdateDomainCount 2
+
+$vmPassword = ConvertTo-SecureString ([System.Guid]::NewGuid().ToString() + "!Aa1") -AsPlainText -Force
+$vmCredential = New-Object System.Management.Automation.PSCredential ("azureuser", $vmPassword)
+
+for (($i = 1); ($i -le 2); ($i++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$i" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
+    -Credential $vmCredential `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -AvailabilitySetName $availabilitySetName
 }
