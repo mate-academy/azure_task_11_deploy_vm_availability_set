@@ -6,10 +6,10 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
+$sshKeyPublicKey = Get-Content "$HOME/.ssh/mate.pub" -Raw
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
-$vmSize = "Standard_B1s"
+$vmSize = "Standard_D2as_v4"
 $availabilitySetName = "mateavalset"
 
 Write-Host "Creating a resource group $resourceGroupName ..."
@@ -25,15 +25,23 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+Write-Host "Creating an availability set $availabilitySetName ..."
+New-AzAvailabilitySet -ResourceGroupName $resourceGroupName -Name $availabilitySetName -Location $location -Sku "Aligned" -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 5
+
+$vmCredential = New-Object System.Management.Automation.PSCredential ("azureuser", (ConvertTo-SecureString ((New-Guid).Guid + "Aa1!") -AsPlainText -Force))
+
+for (($i = 1); ($i -le 2); ($i++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$i" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -AvailabilitySetName $availabilitySetName `
+    -SecurityType "Standard" `
+    -Credential $vmCredential
 }
