@@ -30,10 +30,10 @@ Write-Host "Creating an availability set $availabilitySetName ..."
 New-AzAvailabilitySet -Location $location -Name $availabilitySetName -ResourceGroupName $resourceGroupName -Sku aligned -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 2
 
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+for (($i = 1); ($i -le 2); ($i++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$i" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
