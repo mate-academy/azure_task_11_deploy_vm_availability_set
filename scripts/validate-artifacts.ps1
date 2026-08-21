@@ -1,6 +1,6 @@
 param(
-    [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
-    [bool]$DownloadArtifacts=$true
+    [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+    [bool]$DownloadArtifacts = $true
 )
 
 
@@ -38,11 +38,13 @@ $nsg = ( $TemplateObject.resources | Where-Object -Property type -EQ "Microsoft.
 if ($nsg) {
     if ($nsg.name.Count -eq 1) { 
         Write-Output "`u{2705} Checked if the Network Security Group resource exists - OK"
-    }  else { 
+    }
+    else { 
         Write-Output `u{1F914}
         throw "More than one Network Security Group resource was found in the task resource group. Please make sure that your script creates only one network security group (check if script attaches the NSG you are creating to the subnet) and try again."
     }
-} else {
+}
+else {
     Write-Output `u{1F914}
     throw "Unable to find Network Security Group resouce. Please re-deploy the VM and try again."
 }
@@ -51,11 +53,13 @@ $virtualNetwork = ( $TemplateObject.resources | Where-Object -Property type -EQ 
 if ($virtualNetwork ) {
     if ($virtualNetwork.name.Count -eq 1) { 
         Write-Output "`u{2705} Checked if virtual network exists - OK."
-    }  else { 
+    }
+    else { 
         Write-Output `u{1F914}
         throw "More than one virtual network resource was found in the task resource group. Please make sure that your script deploys only 1 virtual network, and try again."
     }
-} else {
+}
+else {
     Write-Output `u{1F914}
     throw "Unable to find virtual network in the task resource group. Please make sure that your script creates a virtual network and try again."
 }
@@ -63,7 +67,8 @@ if ($virtualNetwork ) {
 $virtualNetworkName = $virtualNetwork.name.Replace("[parameters('virtualNetworks_", "").Replace("_name')]", "")
 if ($virtualNetworkName -eq "vnet") { 
     Write-Output "`u{2705} Checked the virtual network name - OK."
-} else { 
+}
+else { 
     Write-Output `u{1F914}
     throw "Unable to verify the virtual network name. Please make sure that your script creates a virtual network called 'vnet' and try again."
 }
@@ -72,18 +77,21 @@ $subnet = $virtualNetwork.properties.subnets
 if ($subnet) {
     if ($subnet.name.Count -eq 1) { 
         Write-Output "`u{2705} Checked if subnet exists - OK."
-    }  else { 
+    }
+    else { 
         Write-Output `u{1F914}
         throw "More than one subnet was found in the virtual network. Please make sure that your script deploys only 1 subnet, and try again."
     }
-} else {
+}
+else {
     Write-Output `u{1F914}
     throw "Unable to find subnet in the virtual network. Please make sure that your script creates a subnet and try again."
 }
 
 if ($subnet.name -eq "default") { 
     Write-Output "`u{2705} Checked the subnet name - OK."
-} else { 
+}
+else { 
     Write-Output `u{1F914}
     throw "Unable to verify the subnet name. Please make sure that your script creates a subnet called 'default' and try again."
 }
@@ -92,11 +100,13 @@ $sshKey = ( $TemplateObject.resources | Where-Object -Property type -EQ "Microso
 if ($sshKey) {
     if ($sshKey.name.Count -eq 1) { 
         Write-Output "`u{2705} Checked if the public SSH key resource exists - OK"
-    }  else { 
+    }
+    else { 
         Write-Output `u{1F914}
         throw "More than one public SSH key resource was found in the VM resource group. Please make sure that your script creates only one public SSH key resource and try again."
     }
-} else {
+}
+else {
     Write-Output `u{1F914}
     throw "Unable to find public SSH key resouce. Please make sure that your script creates a public SSH key resouce and try again."
 }
@@ -104,7 +114,8 @@ if ($sshKey) {
 $sshKeyName = $sshKey.name.Replace("[parameters('sshPublicKeys_", "").Replace("_name')]", "")
 if ($sshKeyName -eq "linuxboxsshkey") { 
     Write-Output "`u{2705} Checked the public ssh key name - OK"
-} else { 
+}
+else { 
     Write-Output `u{1F914}
     throw "Unable to verify the public ssh key name. Please make sure that your script creates a public ssh key called 'linuxboxsshkey' and try again."
 }
@@ -113,11 +124,13 @@ $availabilitySet = ( $TemplateObject.resources | Where-Object -Property type -EQ
 if ($availabilitySet) {
     if ($availabilitySet.name.Count -eq 1) { 
         Write-Output "`u{2705} Checked if the availability set resource exists - OK"
-    }  else { 
+    }
+    else { 
         Write-Output `u{1F914}
         throw "More than one availability set resource  was found in the task resource group. Please make sure that your script creates only one availability set resource and try again."
     }
-} else {
+}
+else {
     Write-Output `u{1F914}
     throw "Unable to find availability set resource. Please make sure that your script creates a availability set resource and try again."
 }
@@ -126,11 +139,13 @@ $virtualMachines = ( $TemplateObject.resources | Where-Object -Property type -EQ
 if ($virtualMachines) {
     if ($virtualMachines.name.Count -eq 2) { 
         Write-Output "`u{2705} Checked if Virtual Machines exists - OK."
-    }  else { 
+    }
+    else { 
         Write-Output `u{1F914}
         throw "Wrong number of Virtual Machine resource was found in the task resource group. Please make sure that your script creates 2 VMs and try again."
     }
-} else {
+}
+else {
     Write-Output `u{1F914}
     throw "Unable to find Virtual Machines in the task resource group. Please make sure that your script creates 2 VMs and try again."
 }
@@ -138,36 +153,41 @@ if ($virtualMachines) {
 foreach ($virtualMachine in $virtualMachines) { 
     if ($virtualMachine.properties.availabilitySet.id) { 
         Write-Output "`u{2705} Checked if virtual machine has availability set assigned - OK"
-    } else  {
+    }
+    else {
         Write-Output `u{1F914}
         throw "Unable to verify that VM is assigned to the availability set. Please make sure that you are assinging the VM to the availability set during the creation with parameter '-AvailabilitySetName' and try again."
     }
 
     if ($virtualMachine.properties.osProfile.linuxConfiguration.ssh.publicKeys.keyData -eq $sshKey.properties.publicKey) { 
         Write-Output "`u{2705} Checked if virtual machine uses the public ssh key 'linuxboxsshkey' - OK"
-    } else { 
+    }
+    else { 
         Write-Output `u{1F914}
         throw "Unable to verify that VM uses the public ssh key 'linuxboxsshkey'. Please make sure that in New-AzVm comandled, parameter '-SshKeyName' is set to the name of the public SSH key you created earlier, and that you are not setting the parameter '-GenerateSshKey'."
     }
 
-    if ($virtualMachine.properties.storageProfile.imageReference.publisher -eq "canonical") { 
-        Write-Output "`u{2705} Checked Virtual Machine OS image publisher - OK" 
-    } else { 
-        Write-Output `u{1F914}
-        throw "Virtual Machine uses OS image from unknown published. Please make sure that your script creates a VM from image with friendly name 'Ubuntu2204' and try again."
+    if ($virtualMachine.properties.storageProfile.imageReference.publisher -eq "canonical") {
+        Write-Output "`u{2705} Checked Virtual Machine OS image publisher - OK"
     }
-    if ($virtualMachine.properties.storageProfile.imageReference.offer.Contains('ubuntu-server') -and $virtualMachine.properties.storageProfile.imageReference.sku.Contains('22_04')) { 
-        Write-Output "`u{2705} Checked Virtual Machine OS image offer - OK"
-    } else { 
+    else {
         Write-Output `u{1F914}
-        throw "Virtual Machine uses wrong OS image. Please make sure that your script creates a VM from image with friendly name 'Ubuntu2204' and try again." 
+        throw "Virtual Machine uses OS image from unknown published. Please make sure that your script creates a VM from image with friendly name 'Ubuntu2404' and try again."
+    }
+    if ($virtualMachine.properties.storageProfile.imageReference.offer.Contains('ubuntu-24_04-lts') -and $virtualMachine.properties.storageProfile.imageReference.sku.Contains('server')) {
+        Write-Output "`u{2705} Checked Virtual Machine OS image offer - OK"
+    }
+    else {
+        Write-Output `u{1F914}
+        throw "Virtual Machine uses wrong OS image. Please make sure that your script creates a VM from image with friendly name 'Ubuntu2404' and try again."
     }
 
-    if ($virtualMachine.properties.hardwareProfile.vmSize -eq "Standard_B1s") { 
+    if ($virtualMachine.properties.hardwareProfile.vmSize -eq "Standard_B2ats_v2") {
         Write-Output "`u{2705} Checked Virtual Machine size - OK"
-    } else { 
+    }
+    else {
         Write-Output `u{1F914}
-        throw "Virtual Machine size is not set to B1s. Please make sure that your script creates a VM with size B1s and try again."
+        throw "Virtual Machine size is not set to Standard_B2ats_v2. Please make sure that your script creates a VM with size Standard_B2ats_v2 and try again."
     }
 }
 

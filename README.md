@@ -41,7 +41,7 @@ In this task, you will need to write and run a Powershell script, which deploys 
     
     - In the script, you should assume that you are already logged in to Azure and using the correct subscription (don't use commands 'Connect-AzAccount' and 'Set-AzContext', if needed — just run them on your computer before running the script). 
 
-    - Use any region you want, for example `uksouth`. 
+    - Use any region you want, for example `uksouth`. This solution uses `denmarkeast`, since `Standard_B2ats_v2` is restricted (NotAvailableForSubscription) in the regions this subscription has quota for (e.g. `ukwest`, `canadacentral`), and is available in `denmarkeast` without restrictions.
 
     - Script already has code that deploys two VMs across two availability zones. Update the code to deploy two VMs into an availability set. 
     
@@ -51,7 +51,7 @@ In this task, you will need to write and run a Powershell script, which deploys 
     
     - Both VMs should be deployed to the `default` subnet of the virtual network `vnet`, use network security group `defaultnsg`, and SSH key `linuxboxsshkey` (check the documentation of [New-AzVm](https://learn.microsoft.com/en-us/powershell/module/az.compute/new-azvm?view=azps-11.5.0) — it allows you to just specify names of those resources as comandlet parameters). 
 
-    - VMs should use images with the friendly name `Ubuntu2204` and size `Standard_B1s`.
+    - VMs should use images with the friendly name `Ubuntu2404` and size `Standard_B2ats_v2`.
 
     - Note that in this task, you are not required to deploy a public IP resource for the VMs.
 
