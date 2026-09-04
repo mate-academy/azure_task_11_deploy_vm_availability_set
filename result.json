@@ -1,0 +1,18 @@
+[
+  {
+    "Name": "matebox-1",
+    "Location": "denmarkeast",
+    "AvailabilitySetReference": {
+      "Id": "/subscriptions/ced82c4a-5461-4738-8157-b47e0d8a98a1/resourceGroups/mate-azure-task-11/providers/Microsoft.Compute/availabilitySets/MATEAVALSET"
+    },
+    "ProvisioningState": "Succeeded"
+  },
+  {
+    "Name": "matebox-2",
+    "Location": "denmarkeast",
+    "AvailabilitySetReference": {
+      "Id": "/subscriptions/ced82c4a-5461-4738-8157-b47e0d8a98a1/resourceGroups/mate-azure-task-11/providers/Microsoft.Compute/availabilitySets/MATEAVALSET"
+    },
+    "ProvisioningState": "Succeeded"
+  }
+]
