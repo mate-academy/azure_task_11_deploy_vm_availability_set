@@ -1,4 +1,4 @@
-$location = "uksouth"
+$location = "denmarkeast"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -25,6 +25,14 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
+New-AzAvailabilitySet `
+  -ResourceGroupName $resourceGroupName `
+  -Name $availabilitySetName `
+  -Location $location `
+  -PlatformFaultDomainCount 2 `
+  -PlatformUpdateDomainCount 5 `
+  -Sku Aligned
+
 for (($zone = 1); ($zone -le 2); ($zone++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
@@ -35,5 +43,11 @@ for (($zone = 1); ($zone -le 2); ($zone++) ) {
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -AvailabilitySetName $availabilitySetName `
+    -GenerateSshKey:$false
 }
+
+$vms = Get-AzVM -ResourceGroupName $resourceGroupName
+$result = $vms | Select-Object Name, Location, AvailabilitySetReference, ProvisioningState
+$result | ConvertTo-Json | Out-File -FilePath "result.json"
