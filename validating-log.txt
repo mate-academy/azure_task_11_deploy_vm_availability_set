@@ -1,0 +1,21 @@
+Validating artifacts
+✅ Checked if the Network Security Group resource exists - OK
+✅ Checked if virtual network exists - OK.
+✅ Checked the virtual network name - OK.
+✅ Checked if subnet exists - OK.
+✅ Checked the subnet name - OK.
+✅ Checked if the public SSH key resource exists - OK
+✅ Checked the public ssh key name - OK
+✅ Checked if the availability set resource exists - OK
+✅ Checked if Virtual Machines exists - OK.
+✅ Checked if virtual machine has availability set assigned - OK
+✅ Checked if virtual machine uses the public ssh key 'linuxboxsshkey' - OK
+✅ Checked Virtual Machine OS image publisher - OK
+✅ Checked Virtual Machine OS image offer - OK
+🤔
+Exception: C:\Mate Academy\azure_task_11_deploy_vm_availability_set\scripts\validate-artifacts.ps1:170:9
+Line |
+ 170 |          throw "Virtual Machine size is not set to B1s. Please make su …
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Virtual Machine size is not set to B1s. Please make sure that your script creates a VM
+     | with size B1s and try again.
