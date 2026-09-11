@@ -60,6 +60,7 @@ for ($i = 1; $i -le 2; $i++) {
         -VirtualNetworkName $virtualNetworkName `
         -SecurityGroupName $networkSecurityGroupName `
         -SshKeyName $sshKeyName `
-        -AvailabilitySetName $availabilitySetName
+        -AvailabilitySetName $availabilitySetName `
+        -PublicIpAddressName ""
 }
 
