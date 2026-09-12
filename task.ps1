@@ -1,4 +1,4 @@
-$location = "uksouth"
+$location = "indiasouthcentral"
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -11,6 +11,11 @@ $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
 $availabilitySetName = "mateavalset"
+$vmAdminUsername = "azureuser"
+$vmCredential = New-Object System.Management.Automation.PSCredential (
+    $vmAdminUsername,
+    (ConvertTo-SecureString "UnusedPassword123!" -AsPlainText -Force)
+)
 
 Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
@@ -25,15 +30,26 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
+Write-Host "Creating an availability set $availabilitySetName ..."
+New-AzAvailabilitySet `
+    -ResourceGroupName $resourceGroupName `
+    -Name $availabilitySetName `
+    -Location $location `
+    -Sku Aligned `
+    -PlatformFaultDomainCount 2 `
+    -PlatformUpdateDomainCount 2
+
+for (($i = 1); ($i -le 2); ($i++) ) {
     New-AzVm `
     -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
+    -Name "$vmName-$i" `
     -Location $location `
     -image $vmImage `
     -size $vmSize `
     -SubnetName $subnetName `
     -VirtualNetworkName $virtualNetworkName `
     -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+    -SshKeyName $sshKeyName `
+    -Credential $vmCredential `
+    -AvailabilitySetName $availabilitySetName
 }
