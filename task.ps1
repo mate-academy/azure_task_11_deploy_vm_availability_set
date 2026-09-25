@@ -1,19 +1,17 @@
-$location = "uksouth"
-$resourceGroupName = "mate-azure-task-11"
+$location = "denmarkeast"
+$resourceGroupName = "mate-resources"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
 $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
+$sshKeyPublicKey = Get-Content "~/.ssh/id_ed25519.pub"
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
 $availabilitySetName = "mateavalset"
 
-Write-Host "Creating a resource group $resourceGroupName ..."
-New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating a network security group $networkSecurityGroupName ..."
 $nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name SSH  -Protocol Tcp -Direction Inbound -Priority 1001 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow;
@@ -25,15 +23,34 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
-    -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
-    -Location $location `
-    -image $vmImage `
-    -size $vmSize `
-    -SubnetName $subnetName `
-    -VirtualNetworkName $virtualNetworkName `
-    -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
-}
+New-AzAvailabilitySet `
+   -Location $location `
+   -Name $availabilitySetName `
+   -ResourceGroupName $resourceGroupName `
+   -Sku aligned `
+   -PlatformFaultDomainCount 2 `
+   -PlatformUpdateDomainCount 5
+
+New-AzVm `
+  -ResourceGroupName $resourceGroupName `
+  -Name "${vmName}1" `
+  -Location $location `
+  -Image $vmImage `
+  -Size $vmSize `
+  -SubnetName $subnetName `
+  -VirtualNetworkName $virtualNetworkName `
+  -SecurityGroupName $networkSecurityGroupName `
+  -SshKeyName $sshKeyName `
+  -AvailabilitySetName $availabilitySetName `
+
+New-AzVm `
+  -ResourceGroupName $resourceGroupName `
+  -Name "${vmName}2" `
+  -Location $location `
+  -Image $vmImage `
+  -Size $vmSize `
+  -SubnetName $subnetName `
+  -VirtualNetworkName $virtualNetworkName `
+  -SecurityGroupName $networkSecurityGroupName `
+  -SshKeyName $sshKeyName `
+  -AvailabilitySetName $availabilitySetName `
