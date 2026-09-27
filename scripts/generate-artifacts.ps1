@@ -1,10 +1,10 @@
 param(
     [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-    [string]$ArtifactsStorageAccountName='matestorage123'
+    [string]$ArtifactsStorageAccountName='matestorage123tetiana'
 )
 
 # default script values
-$rgName = "mate-azure-task-11"
+$rgName = "mate-resources"
 $taskName = "task11"
 
 $containerName = "task-artifacts"
@@ -73,3 +73,4 @@ $artifactsConfig = @{
     resourcesTemplate = "$resourcesTemplateURL"
 }
 $artifactsConfig | ConvertTo-Json | Out-File -FilePath $artifactsConfigPath -Force
+
