@@ -1,0 +1,14 @@
+for (($vmNumber = 1); ($vmNumber -le 2); ($vmNumber++) ) {
+    New-AzVm `
+        -ResourceGroupName $resourceGroupName `
+        -Name "$vmName-$vmNumber" `
+        -Location $location `
+        -image $vmImage `
+        -size $vmSize `
+        -SubnetName $subnetName `
+        -VirtualNetworkName $virtualNetworkName `
+        -SecurityGroupName $networkSecurityGroupName `
+        -SshKeyName $sshKeyName `
+        -AvailabilitySetName $availabilitySetName `
+        -Credential $credential
+}
