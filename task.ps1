@@ -26,7 +26,7 @@ New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroup
 New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
 
 
-Write-Host "Creating availability set $availabilitySetName ..." New-AzAvailabilitySet ` -Name $availabilitySetName ` -ResourceGroupName $resourceGroupName ` -Location $location ` -Sku Aligned ` -PlatformFaultDomainCount 2 ` -PlatformUpdateDomainCount 5
+Write-Host "Creating availability set $availabilitySetName ..."
 
 New-AzAvailabilitySet `
 -Name $availabilitySetName `
