@@ -1,4 +1,4 @@
-$location = "westus2" # any region that is available in your Azure subscription
+$location = "denmarkeast" # any region that is available in your Azure subscription
 $resourceGroupName = "mate-azure-task-11"
 $networkSecurityGroupName = "defaultnsg"
 $virtualNetworkName = "vnet"
@@ -6,7 +6,6 @@ $subnetName = "default"
 $vnetAddressPrefix = "10.0.0.0/16"
 $subnetAddressPrefix = "10.0.0.0/24"
 $sshKeyName = "linuxboxsshkey"
-$sshKeyPublicKey = Get-Content "~/.ssh/id_rsa.pub" 
 $vmName = "matebox"
 $vmImage = "Ubuntu2204"
 $vmSize = "Standard_B1s"
@@ -23,17 +22,50 @@ New-AzNetworkSecurityGroup -Name $networkSecurityGroupName -ResourceGroupName $r
 $subnet = New-AzVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddressPrefix
 New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $subnet
 
-New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -PublicKey $sshKeyPublicKey
+$sshKeyPath = "$HOME\.ssh\mate_azure_task2.pub"
 
-for (($zone = 1); ($zone -le 2); ($zone++) ) {
-    New-AzVm `
-    -ResourceGroupName $resourceGroupName `
-    -Name "$vmName-$zone" `
-    -Location $location `
-    -image $vmImage `
-    -size $vmSize `
-    -SubnetName $subnetName `
-    -VirtualNetworkName $virtualNetworkName `
-    -SecurityGroupName $networkSecurityGroupName `
-    -SshKeyName $sshKeyName -Zone $zone
+if (Test-Path $sshKeyPath) {
+    $sshKeyPublicKey = (Get-Content $sshKeyPath -Raw).Trim()
+
+    New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -Location $location -PublicKey $sshKeyPublicKey
 }
+else {
+    New-AzSshKey -Name $sshKeyName -ResourceGroupName $resourceGroupName -Location $location
+}
+
+New-AzAvailabilitySet -Name $availabilitySetName -ResourceGroupName $resourceGroupName -Location $location -Sku Aligned -PlatformFaultDomainCount 2 -PlatformUpdateDomainCount 5 -ErrorAction Stop
+
+$credential = Get-Credential -UserName "azureuser"
+
+for ($number = 1; $number -le 2; $number++) {
+
+    New-AzVM `
+        -ResourceGroupName $resourceGroupName `
+        -Name "$vmName-$number" `
+        -Location $location `
+        -Image $vmImage `
+        -Size $vmSize `
+        -Credential $credential `
+        -SubnetName $subnetName `
+        -VirtualNetworkName $virtualNetworkName `
+        -SecurityGroupName $networkSecurityGroupName `
+        -SshKeyName $sshKeyName `
+        -AvailabilitySetName $availabilitySetName `
+        -PublicIpAddressName "" `
+        -ErrorAction Stop
+}
+
+$vms = Get-AzVM -ResourceGroupName $resourceGroupName
+
+$results = @(
+    foreach ($vm in $vms) {
+        @{
+            Name = $vm.Name
+            Location = $vm.Location
+            Size = $vm.HardwareProfile.VmSize
+            AvailabilitySetId = $vm.AvailabilitySetReference.Id
+        }
+    }
+)
+
+ConvertTo-Json -InputObject $results -Depth 5 | Set-Content "./result.json"
